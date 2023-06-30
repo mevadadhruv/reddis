@@ -1,19 +1,22 @@
 import Redis from "redis";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
+
 import app from "./express";
 import userSchema from "./model";
 import { helper } from "./helper/helper";
 const Helper = new helper();
 import { DatabaseConnection } from "./db";
-import config from "./config";
+import { fbconfig } from "./config";
 import passport from "passport";
 import session from "express-session";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import Facebook from "passport-facebook";
+// import { Document, Packer, Paragraph } from "docx";
+// import { saveAs } from "file-saver";
+
 const FacebookStrategy = Facebook.Strategy;
-dotenv.config({ path: "./.env" });
+
 const port = process.env.port;
 
 app.post("/createUser", async (req, res) => {
@@ -43,16 +46,16 @@ passport.deserializeUser(function (id, done) {
 passport.use(
   new FacebookStrategy(
     {
-      clientID: config.facebook_api_key,
-      clientSecret: config.facebook_api_secret,
-      callbackURL: config.callback_url,
-      profileFields: config.profileFields,
+      clientID: fbconfig.facebook_api_key,
+      clientSecret: fbconfig.facebook_api_secret,
+      callbackURL: fbconfig.callback_url,
+      profileFields: fbconfig.profileFields,
     },
-    function (accessToken, refreshToken, profile, done) {
+    function (accessToken: any, refreshToken: any, profile: any, done: any) {
       try {
         process.nextTick(async function () {
           //Check whether the User exists or not using profile.id
-          if (config.use_database) {
+          if (fbconfig.use_database) {
             // if sets to true
             const user = await userSchema.findOne({ sid: profile.id });
             if (!user) {
@@ -60,7 +63,7 @@ passport.use(
               const data = {
                 sid: profile.id,
                 email: String(
-                  profile.emails?.map((d) => {
+                  profile.emails?.map((d: any) => {
                     console.log("email:-  ", d.value);
                     return d.value;
                   })
@@ -97,18 +100,18 @@ app.get("/account", ensureAuthenticated, function (req, res) {
 });
 
 app.get(
-  "/auth/facebook",
+  "/fbauth/facebook",
   passport.authenticate("facebook", { scope: "email" })
 );
 
 app.get(
-  "/auth/facebook/callback",
+  "/fbauth/facebook/callback",
   passport.authenticate("facebook", {
     successRedirect: "/logout",
     failureRedirect: "/login",
   })
   // function (req, res) {
-  //   console.log("auth/facebook/callback req:- ", req);
+  //   console.log("fbauth/facebook/callback req:- ", req);
   //   res.redirect("/");
   // }
 );
@@ -123,7 +126,7 @@ app.get("/logout", function (req, res) {
   });
   res.redirect("/");
 });
-
+// app.get("/word", function (req, res) {});
 function ensureAuthenticated(req: any, res: any, next: any) {
   if (req.isAuthenticated()) {
     return next();
